@@ -194,6 +194,7 @@ h2.head{font-family:"Gowun Batang",Georgia,serif;font-weight:700;font-size:23px;
     <button role="tab" id="tab-brief" aria-selected="true" aria-controls="view-brief">편지<span class="dot" id="briefDot" hidden></span></button>
     <button role="tab" id="tab-log" aria-selected="false" aria-controls="view-log">모험일지</button>
     <button role="tab" id="tab-talk" aria-selected="false" aria-controls="view-talk">귓속말</button>
+    <button role="tab" id="tab-estate" aria-selected="false" aria-controls="view-estate">영지</button>
     <button role="tab" id="tab-rig" aria-selected="false" aria-controls="view-rig">가방</button>
   </nav>
 
@@ -208,6 +209,7 @@ h2.head{font-family:"Gowun Batang",Georgia,serif;font-weight:700;font-size:23px;
         <button id="send">전송</button>
       </div>
     </section>
+    <section id="view-estate" role="tabpanel" aria-labelledby="tab-estate" hidden></section>
     <section id="view-rig" role="tabpanel" aria-labelledby="tab-rig" hidden></section>
   </main>
 </div>
@@ -294,6 +296,40 @@ var UPGRADES = [
 ];
 function upCost(lv){ return Math.round(34 * Math.pow(1.72, lv)); }
 
+/* ── 영지 ── */
+var WAVE_EVERY = 12;           // 1시간마다 한 번 습격
+var FOUND_COST = 50;
+var BUILDINGS = [
+  { id:"wall",    name:"성벽",   desc:"성벽 내구 +45",                       base:40  },
+  { id:"arrow",   name:"화살탑", desc:"방어 전력 +8",                        base:60  },
+  { id:"barrack", name:"병영",   desc:"민병 배치 · 방어 전력 +5",            base:80  },
+  { id:"farm",    name:"농장",   desc:"골드 수입 +0.5/걸음",                 base:50  },
+  { id:"mage",    name:"마법탑", desc:"방어 전력 +22",                       base:150 },
+  { id:"smith",   name:"대장간", desc:"모험가 수확 +3% · 받는 피해 -3%",     base:120 }
+];
+function bldCost(id, lv){
+  var b = 0;
+  for (var i = 0; i < BUILDINGS.length; i++) if (BUILDINGS[i].id === id) b = BUILDINGS[i].base;
+  return Math.round(b * Math.pow(1.55, lv));
+}
+var STATS = [
+  { id:"atk", name:"공격 수련", desc:"방어 시설 전력 +5%" },
+  { id:"def", name:"방어 수련", desc:"성벽 내구·수리 +5%" },
+  { id:"eco", name:"경제 수련", desc:"농장 수입·전리품 +6%" }
+];
+var WAVE_TIERS = [
+  { at:0,  name:"슬라임 무리" },   { at:6,  name:"고블린 정찰대" },
+  { at:12, name:"들개 떼" },       { at:20, name:"오크 약탈대" },
+  { at:30, name:"하피 편대" },     { at:45, name:"트롤 공성추" },
+  { at:65, name:"검은 기사단" },   { at:90, name:"리치의 군단" }
+];
+function waveTier(n){
+  var nm = WAVE_TIERS[0].name;
+  for (var i = 0; i < WAVE_TIERS.length; i++) if (n >= WAVE_TIERS[i].at) nm = WAVE_TIERS[i].name;
+  return nm;
+}
+function wavePow(n){ return 6 + n * 1.1 + Math.pow(n, 1.15) * 0.25; }
+
 /* ── 난수 ─────────────────────────────────────────────── */
 function hash32(seed, t){
   var h = (seed ^ 0x9E3779B9) >>> 0;
@@ -352,12 +388,20 @@ function simulate(save, upTo){
     depth:0, level:1, xp:0, scrap:0, region:0,
     up:{ core:0, armor:0, sensor:0 }, relics:[],
     moves:0, fights:0, finds:0, rests:0, retreats:0, gainedScrap:0,
-    dir:"explore", act:"대기", lastActive:0
+    dir:"explore", act:"대기", lastActive:0,
+    est:{ on:false, t0:0, bld:{ wall:0, arrow:0, barrack:0, farm:0, mage:0, smith:0 },
+          st:{ atk:0, def:0, eco:0 }, stSpent:0, wallHp:0, farmAcc:0,
+          waves:0, repelled:0, breached:0, farmGold:0, lootGold:0, lostGold:0 }
   };
   var ev = [];
   function log(t, kind, text, sev){
     ev.push({ t:t, k:kind, x:text, s:sev });
     if (ev.length > RING) ev.shift();
+  }
+  function wallMax(){ return Math.round((60 + s.est.bld.wall * 45) * (1 + 0.05 * s.est.st.def)); }
+  function defPow(){
+    return (s.est.bld.arrow * 8 + s.est.bld.mage * 22 + s.est.bld.barrack * 5)
+      * (1 + 0.05 * s.est.st.atk) * (1 + 0.02 * (s.level - 1));
   }
   function caps(){
     s.maxHp = 100 + (s.level - 1) * 13;
@@ -391,6 +435,29 @@ function simulate(save, upTo){
           for (var u = 0; u < UPGRADES.length; u++) if (UPGRADES[u].id === a.v) nm = UPGRADES[u].name;
           log(a.t, "rig", ja(nm, "을", "를") + " <em>" + s.up[a.v] + "강</em>으로 강화했다.", 2);
         }
+      } else if (a.k === "found"){
+        if (!s.est.on && s.scrap >= FOUND_COST){
+          s.scrap -= FOUND_COST;
+          s.est.on = true; s.est.t0 = a.t; s.est.bld.wall = 1;
+          s.est.wallHp = wallMax();
+          log(a.t, "found", "마을 어귀 언덕에 <em>영지</em>를 개척했다. 성벽 한 겹부터 시작이다.", 2);
+        }
+      } else if (a.k === "b" && s.est.on && s.est.bld.hasOwnProperty(a.v)){
+        var bc = bldCost(a.v, s.est.bld[a.v]);
+        if (s.scrap >= bc){
+          s.scrap -= bc; s.est.bld[a.v]++;
+          if (a.v === "wall") s.est.wallHp = Math.min(wallMax(), s.est.wallHp + 45);
+          var bn = "";
+          for (var bi = 0; bi < BUILDINGS.length; bi++) if (BUILDINGS[bi].id === a.v) bn = BUILDINGS[bi].name;
+          log(a.t, "build", ja(bn, "을", "를") + " <em>" + s.est.bld[a.v] + "단계</em>로 올렸다.", 1);
+        }
+      } else if (a.k === "st" && s.est.on && s.est.st.hasOwnProperty(a.v)){
+        if (s.est.stSpent < 1 + Math.floor(s.est.repelled / 4)){
+          s.est.st[a.v]++; s.est.stSpent++;
+          var sn = "";
+          for (var si = 0; si < STATS.length; si++) if (STATS[si].id === a.v) sn = STATS[si].name;
+          log(a.t, "stat", ja(sn, "을", "를") + " 쌓았다. 영지가 조금 단단해졌다.", 1);
+        }
       } else if (a.k === "supply"){
         s.charge = s.maxCharge;
         s.hp = Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.35));
@@ -400,6 +467,45 @@ function simulate(save, upTo){
     if (t === upTo) break;
 
     caps();
+
+    /* 영지는 모험가가 잠들어도 돌아간다 */
+    if (s.est.on){
+      if (s.est.bld.farm > 0){
+        s.est.farmAcc += s.est.bld.farm * 0.5 * (1 + 0.06 * s.est.st.eco);
+        var inc = Math.floor(s.est.farmAcc);
+        if (inc > 0){ s.est.farmAcc -= inc; s.scrap += inc; s.gainedScrap += inc; s.est.farmGold += inc; }
+      }
+      s.est.wallHp = Math.min(wallMax(), s.est.wallHp + wallMax() * 0.012 * (1 + 0.04 * s.est.st.def));
+      if (t > s.est.t0 && (t - s.est.t0) % WAVE_EVERY === 0){
+        var er = mulberry32(hash32(seed ^ 0x5EED1E, t));
+        s.est.waves++;
+        var wn = s.est.waves;
+        var P = wavePow(wn) * (0.75 + er() * 0.55);
+        var Dp = defPow();
+        var wt = waveTier(wn);
+        if (Dp >= P){
+          s.est.repelled++;
+          var loot = Math.round(P * 0.9 * (1 + 0.06 * s.est.st.eco));
+          s.scrap += loot; s.gainedScrap += loot; s.est.lootGold += loot;
+          s.est.wallHp = Math.max(1, s.est.wallHp - P * 0.08);
+          if (er() < 0.45 || wn % 5 === 0)
+            log(t, "wave", ja(wt, "이", "가") + " 영지로 몰려왔지만 깔끔하게 막아냈다. 전리품 골드 " + loot + ".", 1);
+        } else {
+          s.est.wallHp -= (P - Dp);
+          if (s.est.wallHp <= 0){
+            s.est.breached++;
+            var lostG = Math.round(Math.min(s.scrap * 0.10, 60 + wn * 6));
+            if (lostG < 0) lostG = 0;
+            s.scrap -= lostG; s.est.lostGold += lostG;
+            s.est.wallHp = wallMax() * 0.45;
+            log(t, "breach", "<em>" + wt + "</em>에게 성벽이 뚫렸다! 골드 " + lostG + (hasJong(lostG) ? "을" : "를") + " 약탈당했다.", 2);
+          } else {
+            log(t, "wave", ja(wt, "이", "가") + " 성벽을 두드렸다. 겨우 버텼다 — 성벽 내구 " + Math.round(s.est.wallHp) + ".", ((P - Dp) > wallMax() * 0.3 ? 2 : 1));
+          }
+        }
+      }
+    }
+
     var r = mulberry32(hash32(seed, t));
     var L = locOf(s.depth), reg = L.reg, tier = L.i + L.c * REGIONS.length;
     var D = DIRECTIVES[s.dir];
@@ -445,13 +551,13 @@ function simulate(save, upTo){
         log(t, "move", pick(reg.move, r), 0);
       }
     } else if (kind === "salv"){
-      var got = Math.round((3 + tier * 2.4) * L.yield * (1 + 0.14 * s.up.sensor) * (0.6 + r() * 0.9));
+      var got = Math.round((3 + tier * 2.4) * L.yield * (1 + 0.14 * s.up.sensor) * (1 + 0.03 * s.est.bld.smith) * (0.6 + r() * 0.9));
       s.scrap += got; s.gainedScrap += got; s.xp += 3; s.charge -= 0.3;
       s.act = "발굴";
       if (r() < 0.5) log(t, "salv", "드릴로 땅을 파서 <em>골드 " + got + "</em>" + (hasJong(got) ? "을" : "를") + " 캐냈다.", 1);
     } else if (kind === "foe"){
       var foe = pick(reg.foe, r);
-      var dmg = (5 + L.danger * 26) * (1 + 0.52 * L.c) * (0.6 + r() * 0.95) * Math.pow(0.88, s.up.armor) / (1 + 0.05 * (s.level - 1));
+      var dmg = (5 + L.danger * 26) * (1 + 0.52 * L.c) * (0.6 + r() * 0.95) * Math.pow(0.88, s.up.armor) * Math.pow(0.97, s.est.bld.smith) / (1 + 0.05 * (s.level - 1));
       dmg = Math.max(1, Math.round(dmg));
       s.hp -= dmg; s.fights++; s.charge -= 0.8;
       s.xp += 7 + tier * 5;
@@ -498,6 +604,11 @@ function simulate(save, upTo){
   s.charge = Math.max(0, Math.round(s.charge));
   var fin = locOf(s.depth);
   s.region = fin.i; s.cycle = fin.c; s.locName = fin.name; s.danger = fin.danger;
+  s.est.wallHp = Math.round(s.est.wallHp);
+  s.est.wallMax = wallMax();
+  s.est.defPow = Math.round(defPow());
+  s.est.ptsEarned = s.est.on ? 1 + Math.floor(s.est.repelled / 4) : 0;
+  s.est.ptsFree = s.est.ptsEarned - s.est.stSpent;
   s.events = ev;
   s.xpNeed = xpNeed(s.level);
   return s;
@@ -663,14 +774,15 @@ function highlights(evts){
   return out;
 }
 function kindClass(k){
-  if (k === "hit") return "k-hit";
-  if (k === "find" || k === "level" || k === "rig" || k === "supply") return "k-find";
-  if (k === "region") return "k-region";
+  if (k === "hit" || k === "breach") return "k-hit";
+  if (k === "find" || k === "level" || k === "rig" || k === "supply" || k === "found") return "k-find";
+  if (k === "region" || k === "wave") return "k-region";
   return "";
 }
 function kindTag(k){
   return ({ hit:"전투", find:"발굴", level:"레벨 업", region:"도착", order:"방침",
-            rig:"강화", supply:"소포", salv:"채굴", note:"일기", move:"이동", rest:"휴식" })[k] || "기록";
+            rig:"강화", supply:"소포", salv:"채굴", note:"일기", move:"이동", rest:"휴식",
+            wave:"방어", breach:"돌파", found:"개척", build:"건설", stat:"수련" })[k] || "기록";
 }
 
 function fallbackNote(evts, delta, awayMs){
@@ -680,6 +792,8 @@ function fallbackNote(evts, delta, awayMs){
   if (delta.level > 0) lines.push("레벨도 " + delta.level + "번 올랐답니다.");
   if (delta.retreats > 0) lines.push("한 번은 크게 져서 마을 쪽으로 실려 갔지만, 금방 털고 일어났어요.");
   else if (delta.fights > 0) lines.push("싸움이 " + delta.fights + "번 있었는데 전부 버텨냈어요.");
+  if (delta.eBre > 0) lines.push("영지 성벽이 " + delta.eBre + "번이나 뚫렸다고 들었어요. 돌아가면 건설부터 도와야겠어요.");
+  else if (delta.eRep > 0) lines.push("우리 영지는 습격을 " + delta.eRep + "번 막아냈대요. 대단하죠?");
   lines.push(S.hp / S.maxHp < 0.4 ? "조금 많이 다쳤어요. 방침을 바꿔 주시면 좋겠어요." : "저는 씩씩해요. 계속 가 볼게요!");
   return lines.join(" ");
 }
@@ -691,6 +805,7 @@ function noteFacts(evts, delta, awayMs){
   f.push("상태: 체력 " + S.hp + "/" + S.maxHp + ", 기력 " + S.charge + "/" + S.maxCharge + ", LV " + S.level);
   f.push("이번에 있었던 변화: 여정 +" + delta.depth + ", 골드 +" + delta.scrap + ", 레벨 +" + delta.level + ", 전투 " + delta.fights + "회, 패배 " + delta.retreats + "회, 보물 " + delta.relics + "점");
   f.push("현재 방침: " + DIRECTIVES[S.dir].name);
+  if (S.est.on) f.push("영지 소식(길드 편으로 전해 들음): 습격 " + delta.eWaves + "회, 격퇴 " + delta.eRep + "회, 성벽 돌파당함 " + delta.eBre + "회, 농장 수입 골드 " + delta.eFarm + ", 약탈 손실 골드 " + delta.eLost);
   var picked = highlights(evts).slice(-8);
   if (picked.length){
     f.push("겪은 일(시각순):");
@@ -750,7 +865,10 @@ function renderBrief(){
   var delta = {
     depth: S.depth - S0.depth, scrap: S.gainedScrap - S0.gainedScrap,
     level: S.level - S0.level, fights: S.fights - S0.fights,
-    retreats: S.retreats - S0.retreats, relics: S.relics.length - S0.relics.length
+    retreats: S.retreats - S0.retreats, relics: S.relics.length - S0.relics.length,
+    eWaves: S.est.waves - S0.est.waves, eRep: S.est.repelled - S0.est.repelled,
+    eBre: S.est.breached - S0.est.breached, eFarm: S.est.farmGold - S0.est.farmGold,
+    eLoot: S.est.lootGold - S0.est.lootGold, eLost: S.est.lostGold - S0.est.lostGold
   };
   $("briefDot").hidden = !fresh;
 
@@ -764,6 +882,7 @@ function renderBrief(){
       + '<span class="gain">골드 <b>' + S.scrap + '</b></span>'
       + '<span class="gain">보물 <b>' + S.relics.length + '</b></span>'
       + '<span class="gain">전투 <b>' + S.fights + '</b></span>'
+      + (S.est.on ? '<span class="gain">성벽 <b>' + Math.max(0, Math.min(100, Math.round(S.est.wallHp / S.est.wallMax * 100))) + '%</b></span>' : '')
       + '</div>';
     var recent = S.events.slice(-6).reverse();
     h += '<ul class="tl">';
@@ -794,6 +913,18 @@ function renderBrief(){
   h += '<span class="gain">전투 <b>' + delta.fights + '</b></span>';
   if (delta.retreats > 0) h += '<span class="gain">패배 <b>' + delta.retreats + '</b></span>';
   h += '</div>';
+
+  if (S.est.on && delta.eWaves > 0){
+    h += '<p class="eyebrow" style="margin-top:18px">영지 전황</p>';
+    h += '<div class="gains" style="padding-top:4px">';
+    h += '<span class="gain">습격 <b>' + delta.eWaves + '</b></span>';
+    h += '<span class="gain' + (delta.eRep > 0 ? ' up' : '') + '">격퇴 <b>' + delta.eRep + '</b></span>';
+    if (delta.eBre > 0) h += '<span class="gain">돌파당함 <b>' + delta.eBre + '</b></span>';
+    if (delta.eFarm > 0) h += '<span class="gain up">농장 <b>+' + delta.eFarm + '</b></span>';
+    if (delta.eLoot > 0) h += '<span class="gain up">전리품 <b>+' + delta.eLoot + '</b></span>';
+    if (delta.eLost > 0) h += '<span class="gain">약탈 <b>-' + delta.eLost + '</b></span>';
+    h += '</div>';
+  }
 
   var hl = highlights(evts);
   h += '<ul class="tl">';
@@ -899,6 +1030,87 @@ function renderRig(){
   };
 }
 
+/* ── 영지 ─────────────────────────────────────────────── */
+function nextWaveIn(nt){
+  if (!S.est.on) return 0;
+  var next = S.est.t0 + (Math.floor((nt - S.est.t0) / WAVE_EVERY) + 1) * WAVE_EVERY;
+  return (next - nt) * 5;
+}
+function renderEstate(){
+  var v = $("view-estate"), nt = nowTick(), h = "";
+  if (!S.est.on){
+    h += '<p class="eyebrow">영지 개척</p>';
+    h += '<h2 class="head">마을 어귀, 언덕 하나가<br>비어 있습니다.</h2>';
+    h += '<p class="sub">깃발을 꽂으면 당신의 영지가 됩니다. 몬스터가 시간마다 몰려오지만, 성벽과 탑이 당신 대신 싸워요 — 자는 동안에도.</p>';
+    h += '<div class="gains">'
+      + '<span class="gain">개척 비용 <b>골드 ' + FOUND_COST + '</b></span>'
+      + '<span class="gain">보유 <b>' + S.scrap + '</b></span></div>';
+    h += '<button class="ack" id="foundBtn"' + (S.scrap >= FOUND_COST ? "" : " disabled") + '>'
+      + (S.scrap >= FOUND_COST ? "이 언덕에 깃발을 꽂는다" : "골드 " + FOUND_COST + "가 모이면 개척할 수 있어요") + '</button>';
+    h += '<p class="warnline">개척하면 성벽 1단계가 함께 세워지고, 한 시간 뒤 첫 습격이 옵니다.</p>';
+    v.innerHTML = h;
+    var fb = $("foundBtn");
+    if (S.scrap >= FOUND_COST) fb.onclick = function(){
+      save.acts.push({ t: nowTick(), k: "found" });
+      persist(); refresh(true); renderEstate(); toast("영지를 개척했습니다!");
+    };
+    return;
+  }
+
+  var e = S.est, ename = save.ename || save.name + "의 영지";
+  var wallPct = Math.max(0, Math.min(100, Math.round(e.wallHp / e.wallMax * 100)));
+  var nextP = Math.round(wavePow(e.waves + 1));
+  h += '<p class="eyebrow">영지 전황</p>';
+  h += '<h2 class="head">' + esc(ename) + '</h2>';
+  h += '<p class="sub">다음 습격까지 약 ' + nextWaveIn(nt) + '분 · 예상 전력 ' + nextP
+    + ' vs 우리 방어 <span class="mono" style="color:var(--accent)">' + e.defPow + '</span></p>';
+  h += '<div style="margin:0 0 6px;display:flex;justify-content:space-between;font-size:11px;color:var(--faint)"><span>성벽 내구</span><span class="mono">' + e.wallHp + '/' + e.wallMax + '</span></div>';
+  h += '<div class="bar hp' + (wallPct < 35 ? " low" : "") + '" style="height:5px;margin-bottom:16px"><i style="width:' + wallPct + '%"></i></div>';
+  h += '<div class="gains" style="border-top:1px solid var(--line)">'
+    + '<span class="gain">습격 <b>' + e.waves + '</b></span>'
+    + '<span class="gain up">격퇴 <b>' + e.repelled + '</b></span>'
+    + '<span class="gain">돌파당함 <b>' + e.breached + '</b></span>'
+    + '<span class="gain">농장 수입 <b>' + e.farmGold + '</b></span></div>';
+
+  h += '<p class="eyebrow" style="margin-top:24px">수련 · 포인트 <span class="mono" style="color:var(--accent)">' + e.ptsFree + '</span> <span style="letter-spacing:0;text-transform:none">(격퇴 4회마다 +1)</span></p>';
+  for (var i = 0; i < STATS.length; i++){
+    var st = STATS[i];
+    h += '<div class="rigrow"><div class="t"><strong>' + st.name + '<span class="lv">' + e.st[st.id] + '</span></strong>'
+      + '<span class="d">' + st.desc + '</span></div>'
+      + '<button class="buy" data-st="' + st.id + '"' + (e.ptsFree > 0 ? "" : " disabled") + '>수련</button></div>';
+  }
+
+  h += '<p class="eyebrow" style="margin-top:24px">건설 · 보유 골드 <span class="mono" style="color:var(--accent)">' + S.scrap + '</span></p>';
+  for (var b = 0; b < BUILDINGS.length; b++){
+    var bd = BUILDINGS[b], lv = e.bld[bd.id], c = bldCost(bd.id, lv);
+    h += '<div class="rigrow"><div class="t"><strong>' + bd.name + '<span class="lv">' + lv + '단계</span></strong>'
+      + '<span class="d">' + bd.desc + '</span></div>'
+      + '<button class="buy" data-bld="' + bd.id + '"' + (S.scrap >= c ? "" : " disabled") + '>건설 <b>' + c + '</b></button></div>';
+  }
+
+  h += '<p class="eyebrow" style="margin-top:24px">영지 이름</p><div class="namefield"><input id="enameIn" maxlength="16" value="' + esc(ename) + '"><button class="ghost" id="enameSave">변경</button></div>';
+  v.innerHTML = h;
+
+  var sts = v.querySelectorAll("[data-st]");
+  for (var q = 0; q < sts.length; q++) sts[q].onclick = function(){
+    if (S.est.ptsFree < 1) return;
+    save.acts.push({ t: nowTick(), k: "st", v: this.getAttribute("data-st") });
+    persist(); refresh(true); renderEstate(); toast("수련을 마쳤습니다.");
+  };
+  var blds = v.querySelectorAll("[data-bld]");
+  for (var w = 0; w < blds.length; w++) blds[w].onclick = function(){
+    var id = this.getAttribute("data-bld");
+    if (S.scrap < bldCost(id, S.est.bld[id])) return;
+    save.acts.push({ t: nowTick(), k: "b", v: id });
+    persist(); refresh(true); renderEstate(); toast("건설을 지시했습니다.");
+  };
+  $("enameSave").onclick = function(){
+    var n = $("enameIn").value.trim();
+    if (!n) return;
+    save.ename = n.slice(0, 16); persist(); renderEstate(); toast("영지 이름을 바꿨습니다.");
+  };
+}
+
 /* ── 귓속말 ─────────────────────────────────────────────── */
 function renderChat(){
   var c = $("chat");
@@ -934,6 +1146,9 @@ function chatRules(){
     "- 현재 방침: " + DIRECTIVES[S.dir].name + "\n" +
     "- 지금까지: 이동 " + S.moves + "회, 전투 " + S.fights + "회, 패배 " + S.retreats + "회, 보물 " + S.relics.length + "점\n" +
     "- 가진 보물: " + (S.relics.length ? S.relics.join(", ") : "아직 없음") + "\n" +
+    (S.est.on
+      ? "- 영지 '" + (save.ename || save.name + "의 영지") + "': 성벽 " + S.est.wallHp + "/" + S.est.wallMax + ", 방어 전력 " + S.est.defPow + ", 습격 " + S.est.waves + "회 중 격퇴 " + S.est.repelled + "·돌파당함 " + S.est.breached + "\n"
+      : "- 영지: 아직 개척 전 (길드장님이 '영지' 화면에서 개척할 수 있음)\n") +
     "- 모험 시작 후 " + dur(Date.now() - save.startedAt) + " 경과\n\n" +
     "최근 일지:\n" + (recent || "- (아직 기록 없음)") + "\n\n이제 길드장님의 귓속말에 답하십시오.";
 }
@@ -995,7 +1210,7 @@ function sendMsg(){
 }
 
 /* ── 탭 ───────────────────────────────────────────────── */
-var TABS = ["brief", "log", "talk", "rig"];
+var TABS = ["brief", "log", "talk", "estate", "rig"];
 var active = "brief";
 function show(name){
   active = name;
@@ -1006,6 +1221,7 @@ function show(name){
   }
   if (name === "log") renderLog();
   if (name === "rig") renderRig();
+  if (name === "estate") renderEstate();
   if (name === "talk"){ renderChat(); }
   if (name === "brief") renderBrief();
   window.scrollTo(0, 0);
@@ -1024,6 +1240,7 @@ function refresh(force){
   if (force || nt !== lastTick){
     if (active === "log") renderLog();
     if (active === "rig") renderRig();
+    if (active === "estate") renderEstate();
     if (force && active === "brief") renderBrief();
   }
   lastTick = nt;
