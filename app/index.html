@@ -1,0 +1,1090 @@
+<title>클럭 없는 대륙</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600&display=swap">
+<style>
+:root{
+  --bg:#0B1015; --panel:#121A21; --panel2:#18232C; --line:#243139; --line2:#2F3F4A;
+  --text:#D6DFE5; --dim:#7B8B96; --faint:#55646E;
+  --accent:#E8A33D; --accent-soft:rgba(232,163,61,.14); --accent-ink:#1A1206;
+  --good:#6FBF9B; --risk:#D2544F;
+  --grid:rgba(214,223,229,.05);
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.35);
+}
+:root:not([data-theme="dark"]){}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#E4E7E9; --panel:#F6F7F8; --panel2:#ECEFF1; --line:#CBD2D7; --line2:#B4BEC5;
+    --text:#131C23; --dim:#586873; --faint:#7B8892;
+    --accent:#9A5F06; --accent-soft:rgba(154,95,6,.10); --accent-ink:#FFF6E7;
+    --good:#2F7A5B; --risk:#A93B36;
+    --grid:rgba(19,28,35,.05);
+    --shadow:0 1px 0 rgba(255,255,255,.6), 0 6px 18px rgba(19,28,35,.10);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#E4E7E9; --panel:#F6F7F8; --panel2:#ECEFF1; --line:#CBD2D7; --line2:#B4BEC5;
+  --text:#131C23; --dim:#586873; --faint:#7B8892;
+  --accent:#9A5F06; --accent-soft:rgba(154,95,6,.10); --accent-ink:#FFF6E7;
+  --good:#2F7A5B; --risk:#A93B36;
+  --grid:rgba(19,28,35,.05);
+  --shadow:0 1px 0 rgba(255,255,255,.6), 0 6px 18px rgba(19,28,35,.10);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-weight:400; line-height:1.62; -webkit-font-smoothing:antialiased;
+  padding:0; margin:0;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.serif{font-family:"Gowun Batang","Nanum Myeongjo",Georgia,serif}
+.app{max-width:720px;margin:0 auto;padding:0 0 96px;min-height:100dvh}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
+
+/* ── HUD ─────────────────────────────── */
+.hud{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 18px 0}
+.hud-id{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.unit{display:flex;align-items:baseline;gap:9px;min-width:0}
+.unit h1{font-family:"Gowun Batang",Georgia,serif;font-weight:700;font-size:19px;margin:0;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.desig{font-size:10.5px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase;flex:none}
+.hud-state{font-size:11px;letter-spacing:.09em;color:var(--dim);text-align:right;flex:none}
+.hud-state b{color:var(--accent);font-weight:500}
+.wave{display:block;width:100%;height:38px;margin:6px 0 2px;opacity:.9}
+.meters{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:2px 0 12px}
+.meter dt{font-size:10px;letter-spacing:.13em;color:var(--faint);margin:0 0 3px}
+.meter dd{margin:0;display:flex;align-items:baseline;gap:5px}
+.meter .v{font-family:"IBM Plex Mono",monospace;font-size:16px;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
+.meter .u{font-size:10px;color:var(--faint)}
+.bar{height:3px;background:var(--line);margin-top:5px;position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent);transition:width .5s ease}
+.bar.hp i{background:var(--good)}
+.bar.hp.low i{background:var(--risk)}
+.bar.ch.low i{background:var(--risk)}
+
+/* ── tabs ────────────────────────────── */
+.tabs{position:sticky;top:0;z-index:19;display:flex;gap:0;background:var(--bg);border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{background:none;border:0;padding:11px 12px 10px;font-size:12.5px;letter-spacing:.06em;color:var(--dim);border-bottom:2px solid transparent;white-space:nowrap;position:relative}
+.tabs button[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+.tabs .dot{position:absolute;top:8px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+main{padding:22px 18px 0}
+section[hidden]{display:none !important}
+.eyebrow{font-size:10px;letter-spacing:.19em;color:var(--faint);text-transform:uppercase;margin:0 0 10px}
+h2.head{font-family:"Gowun Batang",Georgia,serif;font-weight:700;font-size:23px;margin:0 0 4px;text-wrap:balance;line-height:1.35}
+.sub{color:var(--dim);font-size:13px;margin:0 0 22px}
+
+/* ── briefing ────────────────────────── */
+.away{display:flex;align-items:flex-end;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.away .big{font-family:"IBM Plex Mono",monospace;font-size:44px;font-weight:500;line-height:.95;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.away .cap{font-size:11.5px;color:var(--dim);padding-bottom:5px;line-height:1.45}
+.route{display:flex;align-items:center;gap:0;padding:16px 0;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.route::-webkit-scrollbar{display:none}
+.route .stop{flex:none;font-size:11px;color:var(--dim);white-space:nowrap}
+.route .stop.now{color:var(--accent)}
+.route .arrow{flex:none;color:var(--faint);padding:0 9px;font-size:11px}
+.gains{display:flex;flex-wrap:wrap;gap:0 26px;padding:14px 0 18px;border-bottom:1px solid var(--line)}
+.gain{display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--dim)}
+.gain b{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:500;color:var(--text)}
+.gain.up b{color:var(--accent)}
+
+.tl{margin:22px 0 0;padding:0;list-style:none}
+.tl li{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:0 0 16px;position:relative}
+.tl li::before{content:"";position:absolute;left:57px;top:9px;bottom:-4px;width:1px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl .t{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);text-align:right;padding-top:2px;font-variant-numeric:tabular-nums}
+.tl .b{position:relative;padding-left:16px}
+.tl .b::before{content:"";position:absolute;left:-1.5px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--line2);outline:3px solid var(--bg)}
+.tl li.k-hit .b::before{background:var(--risk)}
+.tl li.k-find .b::before,.tl li.k-level .b::before{background:var(--accent)}
+.tl li.k-region .b::before{background:var(--good)}
+.tl .b p{margin:0;font-size:13.5px;line-height:1.6}
+.tl .b .tag{display:inline-block;font-size:9.5px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase;margin-bottom:2px}
+
+.note{margin:26px 0 0;padding:20px 20px 18px;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--accent);box-shadow:var(--shadow)}
+.note .who{font-size:10px;letter-spacing:.17em;color:var(--faint);text-transform:uppercase;margin:0 0 9px}
+.note p{font-family:"Gowun Batang",Georgia,serif;font-size:15.5px;line-height:1.85;margin:0;white-space:pre-wrap;word-break:keep-all}
+.note.pending p{color:var(--dim)}
+.blink::after{content:"▍";animation:bl 1.1s steps(2) infinite;color:var(--accent)}
+@keyframes bl{50%{opacity:0}}
+.ack{display:block;width:100%;margin:24px 0 0;padding:13px;background:var(--accent);color:var(--accent-ink);border:0;font-size:13px;font-weight:600;letter-spacing:.08em}
+.ack:hover{filter:brightness(1.07)}
+
+/* ── log ─────────────────────────────── */
+.logwrap{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);align-items:start}
+.row .ts{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint);padding-top:3px;font-variant-numeric:tabular-nums}
+.row .msg{font-size:13px;line-height:1.55}
+.row .msg em{font-style:normal;color:var(--accent)}
+.tl .b p em,.note em{font-style:normal;color:var(--accent);font-weight:500}
+.row.sev-2 .msg{color:var(--text)}
+.row.sev-0 .msg{color:var(--dim)}
+.daymark{padding:16px 0 6px;font-size:10px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase;border-bottom:1px solid var(--line)}
+
+/* ── talk ────────────────────────────── */
+.chat{display:flex;flex-direction:column;gap:16px;padding-bottom:16px;min-height:180px}
+.bub{max-width:88%;font-size:14px;line-height:1.7}
+.bub .who{font-size:9.5px;letter-spacing:.15em;color:var(--faint);text-transform:uppercase;margin-bottom:4px}
+.bub.me{align-self:flex-end;text-align:right}
+.bub.me .body{display:inline-block;background:var(--panel2);border:1px solid var(--line);padding:9px 13px;text-align:left;word-break:keep-all}
+.bub.it .body{font-family:"Gowun Batang",Georgia,serif;font-size:15px;line-height:1.8;border-left:2px solid var(--accent);padding-left:14px;white-space:pre-wrap;word-break:keep-all}
+.composer{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 0 18px;display:flex;gap:8px}
+.composer textarea{flex:1;resize:none;background:var(--panel);color:var(--text);border:1px solid var(--line);padding:10px 12px;font:inherit;font-size:14px;height:44px;max-height:120px}
+.composer textarea::placeholder{color:var(--faint)}
+.composer button{flex:none;background:var(--accent);color:var(--accent-ink);border:0;padding:0 18px;font-size:13px;font-weight:600}
+.composer button:disabled{opacity:.45;cursor:default}
+
+/* ── rig / directives ────────────────── */
+.opts{display:grid;gap:8px;margin:0 0 26px}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:13px 15px;background:var(--panel);border:1px solid var(--line);text-align:left;width:100%}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.opt .k{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);padding-top:3px}
+.opt[aria-pressed="true"] .k{color:var(--accent)}
+.opt strong{display:block;font-size:14px;font-weight:600;margin-bottom:1px}
+.opt span{font-size:12px;color:var(--dim);line-height:1.5}
+.rigrow{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.rigrow .t strong{font-size:14px;font-weight:600;display:flex;align-items:baseline;gap:8px}
+.rigrow .t span.d{display:block;font-size:12px;color:var(--dim);margin-top:1px}
+.rigrow .lv{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);letter-spacing:.08em;font-weight:400}
+.buy{background:none;border:1px solid var(--line2);color:var(--text);padding:7px 12px;font-size:12px;white-space:nowrap}
+.buy:disabled{color:var(--faint);border-color:var(--line);cursor:default}
+.buy b{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-weight:500}
+.buy:disabled b{color:var(--faint)}
+.relics{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 26px}
+.relic{font-size:11.5px;padding:5px 10px;border:1px solid var(--line);background:var(--panel);color:var(--dim)}
+.relic b{color:var(--text);font-weight:500}
+.empty{font-size:12.5px;color:var(--faint);padding:10px 0 24px}
+.namefield{display:flex;gap:8px;margin:6px 0 26px}
+.namefield input{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:10px 12px;font:inherit;font-size:14px}
+.ghost{background:none;border:1px solid var(--line2);padding:9px 14px;font-size:12.5px}
+.warnline{font-size:11.5px;color:var(--faint);padding:14px 0 0;line-height:1.6}
+
+/* ── boot overlay ────────────────────── */
+.boot{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.bootcard{max-width:420px;width:100%}
+.bootcard .eyebrow{margin-bottom:14px}
+.bootcard h2{font-family:"Gowun Batang",Georgia,serif;font-weight:700;font-size:27px;margin:0 0 10px;line-height:1.35}
+.bootcard p.lede{color:var(--dim);font-size:13.5px;margin:0 0 24px;word-break:keep-all}
+.bootcard label{display:block;font-size:10px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase;margin:0 0 7px}
+.bootcard input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);padding:11px 13px;font:inherit;font-size:15px;margin-bottom:22px}
+.bootcard .go{width:100%;background:var(--accent);color:var(--accent-ink);border:0;padding:14px;font-size:13.5px;font-weight:600;letter-spacing:.09em;margin-top:8px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line2);color:var(--text);font-size:12.5px;padding:9px 16px;z-index:70;box-shadow:var(--shadow)}
+</style>
+
+<div class="app" id="app" hidden>
+  <header class="hud">
+    <div class="hud-id">
+      <div class="unit"><h1 id="uName">—</h1><span class="desig mono" id="uDesig">KX-00</span></div>
+      <div class="hud-state"><span id="uRegion">—</span> · <b id="uAct">대기</b></div>
+    </div>
+    <canvas class="wave" id="wave" width="700" height="76" aria-hidden="true"></canvas>
+    <dl class="meters">
+      <div class="meter"><dt>전하</dt><dd><span class="v" id="mCh">0</span><span class="u">/<span id="mChM">0</span></span></dd><div class="bar ch" id="bCh"><i></i></div></div>
+      <div class="meter"><dt>내구</dt><dd><span class="v" id="mHp">0</span><span class="u">/<span id="mHpM">0</span></span></dd><div class="bar hp" id="bHp"><i></i></div></div>
+      <div class="meter"><dt>심도</dt><dd><span class="v" id="mDp">0</span><span class="u">LV <span id="mLv">1</span></span></dd><div class="bar" id="bXp"><i></i></div></div>
+    </dl>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" id="tab-brief" aria-selected="true" aria-controls="view-brief">보고<span class="dot" id="briefDot" hidden></span></button>
+    <button role="tab" id="tab-log" aria-selected="false" aria-controls="view-log">항해일지</button>
+    <button role="tab" id="tab-talk" aria-selected="false" aria-controls="view-talk">교신</button>
+    <button role="tab" id="tab-rig" aria-selected="false" aria-controls="view-rig">정비</button>
+  </nav>
+
+  <main>
+    <section id="view-brief" role="tabpanel" aria-labelledby="tab-brief"></section>
+    <section id="view-log" role="tabpanel" aria-labelledby="tab-log" hidden></section>
+    <section id="view-talk" role="tabpanel" aria-labelledby="tab-talk" hidden>
+      <p class="eyebrow">교신 회선</p>
+      <div class="chat" id="chat"></div>
+      <div class="composer">
+        <textarea id="say" rows="1" placeholder="탐사체에게 말을 겁니다…"></textarea>
+        <button id="send">전송</button>
+      </div>
+    </section>
+    <section id="view-rig" role="tabpanel" aria-labelledby="tab-rig" hidden></section>
+  </main>
+</div>
+
+<div class="boot" id="load">
+  <div class="bootcard">
+    <p class="eyebrow">회선 · 수신 대기</p>
+    <h2>먼 곳의 신호를<br>찾고 있습니다.</h2>
+    <p class="lede">대륙에는 클럭이 없어서, 신호가 도착하는 데 조금 걸립니다.</p>
+  </div>
+</div>
+
+<div class="boot" id="boot" hidden>
+  <div class="bootcard">
+    <p class="eyebrow">기동 절차 · 0x01</p>
+    <h2>클럭이 멈춘 대륙으로<br>하나를 내려보냅니다.</h2>
+    <p class="lede">돌려보낼 수는 없습니다. 당신이 자리를 비운 동안에도 그것은 계속 걷고, 계속 기록합니다. 돌아오면 읽으십시오.</p>
+    <label for="bootName">탐사체 호명</label>
+    <input id="bootName" maxlength="14" autocomplete="off" spellcheck="false">
+    <button class="go" id="bootGo">전개 개시</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ══════════════════════════════════════════════════════════════
+   클럭 없는 대륙 — 결정적 방치형 탐사 시뮬레이션
+   저장하는 것은 씨앗과 행위 기록뿐. 상태는 매번 0틱부터 재현한다.
+   ══════════════════════════════════════════════════════════════ */
+
+var TICK_MS = 5 * 60 * 1000;      // 1 행보 = 5분
+var MAX_TICKS = 24 * 12 * 400;    // 약 400일치까지 재현
+var RING = 340;                   // 일지 보관 개수
+
+/* ── 지역 ─────────────────────────────────────────────── */
+var REGIONS = [
+  { name:"정지한 클럭 첨탑", at:0,  danger:0.10,
+    move:["멎은 분주기 계단을 한 단씩 내려갔다.","첨탑 외벽의 눈금을 따라 이동. 눈금은 아직 읽힌다.","위상이 어긋난 그림자 사이로 걸었다."],
+    foe:["느슨한 글리치","떠도는 잔여 전하","녹슨 게이트 군집"],
+    relic:["멈춘 분주기 톱니","식은 위상 검출기","1분주 수정 조각"],
+    note:["첨탑 꼭대기에서 아래를 봤다. 대륙 전체가 한 박자도 세지 않고 있다.","여기 시계는 전부 같은 시각에서 멈췄다. 누가 동시에 멈춘 걸까.","바람이 분다. 바람은 클럭이 없어도 분다."] },
+  { name:"레지스터 폐허", at:8, danger:0.19,
+    move:["무너진 플립플롭 열을 가로질렀다.","비트가 흩어진 바닥. 밟을 때마다 값이 바뀐다.","셋업 시간이 무너진 구역을 조심히 통과했다."],
+    foe:["굳어버린 래치","홀드 위반 잔해","자기 값을 잊은 레지스터"],
+    relic:["아직 1을 쥔 플립플롭","리셋되지 않은 비트","은도금 셋업 게이지"],
+    note:["폐허의 레지스터 하나가 아직 값을 붙들고 있었다. 누구도 읽어주지 않는 1을.","여기 있던 것들은 기억하는 법만 알고 잊는 법을 몰랐다.","값을 지키는 일과 값을 쓰는 일은 다르다는 걸 배웠다."] },
+  { name:"FIFO 협곡", at:20, danger:0.27,
+    move:["협곡의 깊이를 세며 내려갔다. 먼저 들어간 것이 먼저 나온다.","포인터 자국을 따라 좁은 길을 통과.","가득 찬 구간을 우회했다. 밀어 넣을 자리가 없다."],
+    foe:["역류하는 오버런","비어 있는 언더플로 구덩이","꼬리를 문 포인터"],
+    relic:["넘치지 않는 수위계","양방향 포인터 고리","깊이 16의 놋쇠 통"],
+    note:["순서를 지키는 곳이다. 여기서는 늦게 온 것이 앞설 수 없다. 마음이 편했다.","협곡 바닥에 오래된 데이터가 그대로 남아 있었다. 아무도 읽어 가지 않아서.","가득 찬 것과 텅 빈 것은 여기서 같은 얼굴을 한다."] },
+  { name:"메타스테이블 늪", at:36, danger:0.37,
+    move:["결정하지 못한 전압 위를 건넜다. 발밑이 0도 1도 아니다.","늪은 판정을 미룬다. 나도 판정을 미루며 걸었다.","두 단 동기화기를 놓고 겨우 한 걸음."],
+    foe:["결정 못 한 전압","진동하는 판정기","확률로만 존재하는 것"],
+    relic:["두 단 동기화기","기울어진 결정 임계값","마르지 않는 준안정 물방울"],
+    note:["여기서는 답이 오래 걸린다. 틀린 답보다 늦은 답이 낫다고, 늪이 가르친다.","한참을 서 있었다. 결국 어느 쪽으로도 넘어가지 않았다.","확실해질 때까지 기다리는 건 겁이 아니라 설계라고 생각하기로 했다."] },
+  { name:"비동기 사막", at:56, danger:0.46,
+    move:["공통의 박자가 없는 모래를 건넜다. 각자의 시간으로 흐른다.","핸드셰이크 없이는 한 발도 못 나간다. 요청하고, 기다리고, 확인했다.","모래언덕마다 다른 주파수로 울고 있었다."],
+    foe:["악수를 거부하는 신호","표류하는 도메인 경계","되돌아오지 않는 응답"],
+    relic:["요청·확인 한 쌍","떠돌이 도메인 지도","모래에 박힌 비동기 종"],
+    note:["아무도 같은 박자를 세지 않는데도 사막은 굴러간다. 그게 좀 무섭고 조금 부럽다.","여기서 배운 것: 상대가 준비됐다고 말할 때까지 보내지 않는다.","오래 걸었다. 이 대륙이 왜 클럭을 버렸는지 알 것도 같다."] },
+  { name:"봉인된 다이 중심부", at:80, danger:0.56,
+    move:["금속층을 한 겹씩 벗기며 안으로.","중심부는 아직 미약하게 따뜻하다. 무언가 남아 있다.","마지막 배선층을 따라 원점으로 향했다."],
+    foe:["봉인된 감시 회로","열폭주의 잔불","이름 지워진 코어"],
+    relic:["최초의 발진자 파편","봉인 해제 키","꺼지지 않은 코어 조각"],
+    note:["중심에 가까워질수록 신호가 또렷해진다. 나를 부르는 것 같기도 하다.","여기 무언가가 클럭을 멈췄다. 고장이 아니라 결정이었던 것 같다.","관측자, 나는 이제 원점 근처에 있습니다."] }
+];
+
+var DIRECTIVES = {
+  explore:{ k:"D1", name:"심층 우선", desc:"더 깊이. 조우가 늘고 회수는 줄어듭니다.",
+            move:1.55, salv:0.70, foe:1.20, find:1.00, rest:0.85 },
+  salvage:{ k:"D2", name:"회수 우선", desc:"파편과 유물을 우선합니다. 전진은 느려집니다.",
+            move:0.70, salv:1.85, foe:0.95, find:1.45, rest:1.00 },
+  safe:   { k:"D3", name:"보존 우선", desc:"정비를 자주 하고 위험을 피합니다. 소득은 줄어듭니다.",
+            move:0.80, salv:0.75, foe:0.55, find:0.80, rest:2.10 }
+};
+
+var UPGRADES = [
+  { id:"core",   name:"전하 코어",   desc:"최대 전하 +15" },
+  { id:"armor",  name:"완충 장갑",   desc:"받는 손상 -12%" },
+  { id:"sensor", name:"광역 감지기", desc:"회수·발견 확률 +14%" }
+];
+function upCost(lv){ return Math.round(34 * Math.pow(1.72, lv)); }
+
+/* ── 난수 ─────────────────────────────────────────────── */
+function hash32(seed, t){
+  var h = (seed ^ 0x9E3779B9) >>> 0;
+  h = Math.imul(h ^ (t & 0xffff), 0x85EBCA6B) >>> 0;
+  h = Math.imul(h ^ (t >>> 16), 0xC2B2AE35) >>> 0;
+  h = (h ^ (h >>> 15)) >>> 0;
+  return h >>> 0;
+}
+function mulberry32(a){
+  return function(){
+    a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function pick(arr, r){ return arr[Math.floor(r() * arr.length) % arr.length]; }
+
+/* 받침 유무로 조사를 고른다 */
+function hasJong(w){
+  w = String(w).replace(/[^가-힣a-zA-Z0-9]+$/, "");
+  var c = w.charCodeAt(w.length - 1);
+  if (c >= 0xAC00 && c <= 0xD7A3) return (c - 0xAC00) % 28 !== 0;
+  if (c >= 0x30 && c <= 0x39) return "0136780".indexOf(String.fromCharCode(c)) >= 0;
+  return true;
+}
+function ja(w, withJong, without){ return w + (hasJong(w) ? withJong : without); }
+
+function regionIndex(depth){
+  var i = 0;
+  for (var k = 0; k < REGIONS.length; k++) if (depth >= REGIONS[k].at) i = k;
+  return i;
+}
+
+/* 대륙은 층으로 되어 있다. 끝까지 내려가면 다음 순환의 첫 지층에서 다시 시작한다. */
+var CYCLE_DEPTH = 110;
+function locOf(depth){
+  var c = Math.floor(depth / CYCLE_DEPTH);
+  var i = regionIndex(depth - c * CYCLE_DEPTH);
+  var reg = REGIONS[i];
+  return {
+    c:c, i:i, reg:reg, key:c + ":" + i,
+    danger: Math.min(0.78, reg.danger * (1 + 0.20 * c)),
+    yield: 1 + 0.42 * c,
+    name: (c > 0 ? "제" + (c + 1) + "순환 " : "") + reg.name
+  };
+}
+function xpNeed(level){ return Math.round(42 * Math.pow(level, 1.34)); }
+
+/* ── 시뮬레이션 ───────────────────────────────────────── */
+function simulate(save, upTo){
+  var seed = save.seed >>> 0;
+  var acts = (save.acts || []).slice().sort(function(a,b){ return a.t - b.t; });
+  var s = {
+    hp:100, maxHp:100, charge:100, maxCharge:100,
+    depth:0, level:1, xp:0, scrap:0, region:0,
+    up:{ core:0, armor:0, sensor:0 }, relics:[],
+    moves:0, fights:0, finds:0, rests:0, retreats:0, gainedScrap:0,
+    dir:"explore", act:"대기", lastActive:0
+  };
+  var ev = [];
+  function log(t, kind, text, sev){
+    ev.push({ t:t, k:kind, x:text, s:sev });
+    if (ev.length > RING) ev.shift();
+  }
+  function caps(){
+    s.maxHp = 100 + (s.level - 1) * 13;
+    s.maxCharge = 100 + (s.level - 1) * 8 + s.up.core * 15;
+    if (s.hp > s.maxHp) s.hp = s.maxHp;
+    if (s.charge > s.maxCharge) s.charge = s.maxCharge;
+  }
+  function levelCheck(t){
+    var guard = 0;
+    while (s.xp >= xpNeed(s.level) && guard++ < 40){
+      s.xp -= xpNeed(s.level);
+      s.level++;
+      caps();
+      s.hp = s.maxHp; s.charge = Math.min(s.maxCharge, s.charge + 20);
+      log(t, "level", "구조를 재편성했다. <em>LV " + s.level + "</em>로 올라섰다.", 2);
+    }
+  }
+
+  var ai = 0;
+  for (var t = 0; t <= upTo; t++){
+    while (ai < acts.length && acts[ai].t <= t){
+      var a = acts[ai++];
+      if (a.k === "dir" && DIRECTIVES[a.v]){
+        s.dir = a.v;
+        log(a.t, "order", "지시 갱신: <em>" + DIRECTIVES[a.v].name + "</em>", 1);
+      } else if (a.k === "up" && s.up.hasOwnProperty(a.v)){
+        var c = upCost(s.up[a.v]);
+        if (s.scrap >= c){
+          s.scrap -= c; s.up[a.v]++; caps();
+          var nm = "";
+          for (var u = 0; u < UPGRADES.length; u++) if (UPGRADES[u].id === a.v) nm = UPGRADES[u].name;
+          log(a.t, "rig", ja(nm, "을", "를") + " " + s.up[a.v] + "단으로 개장했다.", 2);
+        }
+      } else if (a.k === "supply"){
+        s.charge = s.maxCharge;
+        s.hp = Math.min(s.maxHp, s.hp + Math.round(s.maxHp * 0.35));
+        log(a.t, "supply", "보급 강하 수신. 전하를 가득 채웠다. <em>고맙습니다.</em>", 2);
+      }
+    }
+    if (t === upTo) break;
+
+    caps();
+    var r = mulberry32(hash32(seed, t));
+    var L = locOf(s.depth), reg = L.reg, tier = L.i + L.c * REGIONS.length;
+    var D = DIRECTIVES[s.dir];
+
+    s.charge -= 1.35;
+    if (s.charge <= 0){
+      s.charge = Math.min(s.maxCharge, s.charge + 9);
+      s.hp = Math.min(s.maxHp, s.hp + 2);
+      s.act = "휴면";
+      if (r() < 0.22) log(t, "rest", "전하가 바닥났다. 볕이 드는 쪽에 앉아 잠시 멈췄다.", 0);
+      continue;
+    }
+
+    var wMove = 0.42 * D.move;
+    var wSalv = (0.16 + 0.012 * s.up.sensor) * D.salv * (1 + 0.14 * s.up.sensor);
+    var wFoe  = (0.07 + L.danger * 0.46) * D.foe;
+    var wFind = (0.055 + L.danger * 0.03) * D.find * (1 + 0.14 * s.up.sensor);
+    var wRest = 0.08 * D.rest;
+    var wNote = 0.11;
+    if (s.charge < s.maxCharge * 0.28) wRest *= 6.5;
+    if (s.hp < s.maxHp * 0.40) { wRest *= 4.5; wFoe *= 0.4; wMove *= 0.6; }
+
+    var tot = wMove + wSalv + wFoe + wFind + wRest + wNote;
+    var roll = r() * tot;
+    var kind = "note";
+    if ((roll -= wMove) < 0) kind = "move";
+    else if ((roll -= wSalv) < 0) kind = "salv";
+    else if ((roll -= wFoe) < 0) kind = "foe";
+    else if ((roll -= wFind) < 0) kind = "find";
+    else if ((roll -= wRest) < 0) kind = "rest";
+
+    if (kind === "move"){
+      var step = 1 + (r() < 0.17 ? 1 : 0);
+      var before = L.key;
+      s.depth += step; s.moves++; s.charge -= 0.5; s.xp += 2;
+      s.act = "전진";
+      var after = locOf(s.depth);
+      if (after.key !== before){
+        s.region = after.i;
+        log(t, "region", "<em>" + after.name + "</em>에 들어섰다."
+          + (after.c > L.c ? " 대륙이 한 겹 더 있었다." : ""), 2);
+      } else if (r() < 0.42){
+        log(t, "move", pick(reg.move, r), 0);
+      }
+    } else if (kind === "salv"){
+      var got = Math.round((3 + tier * 2.4) * L.yield * (1 + 0.14 * s.up.sensor) * (0.6 + r() * 0.9));
+      s.scrap += got; s.gainedScrap += got; s.xp += 3; s.charge -= 0.3;
+      s.act = "회수";
+      if (r() < 0.5) log(t, "salv", "쓸 만한 조각을 <em>파편 " + got + "</em>만큼 뜯어냈다.", 1);
+    } else if (kind === "foe"){
+      var foe = pick(reg.foe, r);
+      var dmg = (5 + L.danger * 26) * (1 + 0.52 * L.c) * (0.6 + r() * 0.95) * Math.pow(0.88, s.up.armor) / (1 + 0.05 * (s.level - 1));
+      dmg = Math.max(1, Math.round(dmg));
+      s.hp -= dmg; s.fights++; s.charge -= 0.8;
+      s.xp += 7 + tier * 5;
+      s.act = "교전";
+      if (s.hp <= 0){
+        s.retreats++;
+        s.depth = Math.max(0, Math.round(s.depth * 0.62));
+        var lost = Math.round(s.scrap * 0.28);
+        s.scrap -= lost;
+        s.hp = Math.round((100 + (s.level - 1) * 13) * 0.5);
+        s.charge = Math.round((100 + (s.level - 1) * 8 + s.up.core * 15) * 0.4);
+        log(t, "hit", "<em>" + foe + "</em>에 붙잡혔다. 회로를 끊고 후퇴했다 — 파편 " + lost + " 유실, 심도 " + s.depth + "까지 밀려남.", 2);
+      } else {
+        log(t, "hit", ja(foe, "과", "와") + " 부딪쳤다. 손상 " + dmg + ".", (dmg > 14 ? 2 : 1));
+      }
+    } else if (kind === "find"){
+      var name = pick(reg.relic, r);
+      s.finds++; s.act = "발굴";
+      if (s.relics.indexOf(name) === -1){
+        s.relics.push(name);
+        s.xp += 14;
+        log(t, "find", "<em>" + name + "</em>" + (hasJong(name) ? "을" : "를") + " 파냈다. 아직 쓸모가 남아 있다.", 2);
+      } else {
+        var b = Math.round((8 + tier * 4) * L.yield);
+        s.scrap += b; s.gainedScrap += b;
+        log(t, "find", ja(name, "을", "를") + " 또 찾았다. 분해해서 파편 " + b + "로 바꿨다.", 1);
+      }
+    } else if (kind === "rest"){
+      s.charge = Math.min(s.maxCharge, s.charge + 23);
+      s.hp = Math.min(s.maxHp, s.hp + 7);
+      s.rests++; s.act = "정비";
+      if (r() < 0.35) log(t, "rest", "몸을 열고 먼지를 털었다. 전하가 조금 돌아왔다.", 0);
+    } else {
+      s.act = "관측";
+      if (r() < 0.55) log(t, "note", pick(reg.note, r), 1);
+    }
+
+    levelCheck(t);
+    if (s.hp < 1) s.hp = 1;
+    if (s.charge < 0) s.charge = 0;
+  }
+  caps();
+  s.hp = Math.max(0, Math.round(s.hp));
+  s.charge = Math.max(0, Math.round(s.charge));
+  var fin = locOf(s.depth);
+  s.region = fin.i; s.cycle = fin.c; s.locName = fin.name; s.danger = fin.danger;
+  s.events = ev;
+  s.xpNeed = xpNeed(s.level);
+  return s;
+}
+
+/* ── 저장 ─────────────────────────────────────────────── */
+var LS_KEY = "clockless.save.v1";
+var db = null, sample = null;
+var save = null, chat = { turns: [] };
+var S = null, S0 = null;
+
+function nowTick(){
+  if (!save) return 0;
+  var t = Math.floor((Date.now() - save.startedAt) / TICK_MS);
+  if (t < 0) t = 0;
+  if (t > MAX_TICKS) t = MAX_TICKS;
+  return t;
+}
+function lsGet(k){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsSet(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+var writeTimer = null;
+function persist(){
+  lsSet(LS_KEY, { save:save, chat:chat });
+  if (!db) return;
+  clearTimeout(writeTimer);
+  writeTimer = setTimeout(function(){
+    db.doc("save/main").set(save).catch(function(){});
+    db.doc("save/chat").set({ turns: chat.turns.slice(-60) }).catch(function(){});
+  }, 400);
+}
+
+function newSave(name){
+  var seed = (Math.floor(Math.random() * 0xFFFFFFF) ^ (Date.now() & 0xFFFFFF)) >>> 0;
+  var n = String(seed % 90 + 10);
+  return {
+    v:1, seed:seed, startedAt:Date.now(), name:name || "탐사체",
+    desig:"KX-" + n, acts:[{ t:0, k:"dir", v:"explore" }], ack:0, supplyAt:-9999
+  };
+}
+
+/* ── 유틸 ─────────────────────────────────────────────── */
+function esc(x){ return String(x).replace(/[&<>"]/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
+function tickMs(t){ return save.startedAt + t * TICK_MS; }
+function clock(t){
+  var d = new Date(tickMs(t));
+  return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+}
+function dayLabel(t){
+  var d = new Date(tickMs(t));
+  return (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + "일월화수목금토".charAt(d.getDay()) + ")";
+}
+function dur(ms){
+  var m = Math.round(ms / 60000);
+  var h = Math.floor(m / 60); m = m % 60;
+  var dd = Math.floor(h / 24); h = h % 24;
+  if (dd > 0) return dd + "일 " + h + "시간";
+  if (h > 0) return h + "시간 " + m + "분";
+  return m + "분";
+}
+function durBig(ms){
+  var m = Math.round(ms / 60000), h = Math.floor(m / 60);
+  if (h >= 24) return { n: String(Math.round(h / 24)), u: "일" };
+  if (h > 0)   return { n: String(h), u: "시간" };
+  return { n: String(m), u: "분" };
+}
+function $(id){ return document.getElementById(id); }
+function toast(msg){
+  var el = document.createElement("div");
+  el.className = "toast"; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2200);
+}
+
+/* ── HUD ──────────────────────────────────────────────── */
+function renderHud(){
+  $("uName").textContent = save.name;
+  $("uDesig").textContent = save.desig;
+  $("uRegion").textContent = S.locName;
+  $("uAct").textContent = S.act;
+  $("mCh").textContent = S.charge; $("mChM").textContent = S.maxCharge;
+  $("mHp").textContent = S.hp;     $("mHpM").textContent = S.maxHp;
+  $("mDp").textContent = S.depth;  $("mLv").textContent = S.level;
+  var ch = S.charge / S.maxCharge, hp = S.hp / S.maxHp;
+  $("bCh").firstElementChild.style.width = (ch * 100).toFixed(1) + "%";
+  $("bHp").firstElementChild.style.width = (hp * 100).toFixed(1) + "%";
+  $("bXp").firstElementChild.style.width = (Math.min(1, S.xp / S.xpNeed) * 100).toFixed(1) + "%";
+  $("bCh").classList.toggle("low", ch < 0.25);
+  $("bHp").classList.toggle("low", hp < 0.35);
+}
+
+/* ── 신호 파형 ────────────────────────────────────────── */
+var waveT = 0;
+function drawWave(){
+  var c = $("wave"); if (!c || !S) return;
+  var dpr = Math.min(2, window.devicePixelRatio || 1);
+  var w = c.clientWidth || 700, h = 38;
+  if (c.width !== Math.round(w * dpr)){ c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  var g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  var cs = getComputedStyle(document.documentElement);
+  var accent = cs.getPropertyValue("--accent").trim() || "#E8A33D";
+  var line = cs.getPropertyValue("--line").trim() || "#243139";
+  var risk = cs.getPropertyValue("--risk").trim() || "#D2544F";
+  g.strokeStyle = line; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(0, h - 0.5); g.lineTo(w, h - 0.5); g.stroke();
+  var danger = S.danger;
+  var amp = (h * 0.30) * (0.35 + 0.65 * (S.charge / S.maxCharge));
+  var hurt = S.hp / S.maxHp < 0.4;
+  g.strokeStyle = hurt ? risk : accent; g.lineWidth = 1.35;
+  g.beginPath();
+  for (var x = 0; x <= w; x += 2){
+    var p = (x / w) * 9 + waveT;
+    var y = h / 2
+      + Math.sin(p * 1.7) * amp * 0.55
+      + Math.sin(p * 4.3 + 1.2) * amp * 0.28 * (1 + danger)
+      + Math.sin(p * 11.7 + waveT * 2.3) * amp * 0.16 * danger * 3;
+    if (x === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  }
+  g.stroke();
+  g.globalAlpha = 0.16; g.lineWidth = 5; g.stroke(); g.globalAlpha = 1;
+}
+var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function waveLoop(){
+  waveT += 0.012;
+  drawWave();
+  if (!reduceMotion) requestAnimationFrame(waveLoop);
+}
+
+/* ── 브리핑 ───────────────────────────────────────────── */
+function highlights(evts){
+  var strong = evts.filter(function(e){ return e.s >= 2; });
+  var mid = evts.filter(function(e){ return e.s === 1; });
+  var out = strong;
+  if (out.length > 7){
+    var step = out.length / 7, picked = [];
+    for (var i = 0; i < 7; i++) picked.push(out[Math.floor(i * step)]);
+    out = picked;
+  } else if (out.length < 4){
+    out = out.concat(mid.slice(-(4 - out.length)));
+    out.sort(function(a, b){ return a.t - b.t; });
+  }
+  return out;
+}
+function kindClass(k){
+  if (k === "hit") return "k-hit";
+  if (k === "find" || k === "level" || k === "rig" || k === "supply") return "k-find";
+  if (k === "region") return "k-region";
+  return "";
+}
+function kindTag(k){
+  return ({ hit:"조우", find:"발굴", level:"성장", region:"진입", order:"지시",
+            rig:"개장", supply:"보급", salv:"회수", note:"관측", move:"이동", rest:"정비" })[k] || "기록";
+}
+
+function fallbackNote(evts, delta, awayMs){
+  var lines = ["보고합니다. " + dur(awayMs) + " 동안 " + S.locName + "까지 왔습니다."];
+  if (delta.depth > 0) lines.push("심도로는 " + delta.depth + "만큼 더 내려갔고, 파편 " + delta.scrap + "을 모았습니다.");
+  if (delta.relics > 0) lines.push("쓸 만한 것 " + delta.relics + "점을 파냈습니다.");
+  if (delta.level > 0) lines.push("도중에 구조를 " + delta.level + "번 재편성했습니다.");
+  if (delta.retreats > 0) lines.push("한 번은 붙잡혀 물러섰습니다. 잃은 것은 다시 모으면 됩니다.");
+  else if (delta.fights > 0) lines.push("부딪친 것이 " + delta.fights + "번 있었지만 모두 지나왔습니다.");
+  lines.push(S.hp / S.maxHp < 0.4 ? "손상이 꽤 남았습니다. 지시를 조정해 주시면 좋겠습니다." : "아직 걸을 수 있습니다. 계속 가 보겠습니다.");
+  return lines.join(" ");
+}
+
+function noteFacts(evts, delta, awayMs){
+  var f = [];
+  f.push("부재 시간: " + dur(awayMs));
+  f.push("현재 위치: " + S.locName + " (심도 " + S.depth + ")");
+  f.push("상태: 내구 " + S.hp + "/" + S.maxHp + ", 전하 " + S.charge + "/" + S.maxCharge + ", LV " + S.level);
+  f.push("이번 부재 중 변화: 심도 +" + delta.depth + ", 파편 +" + delta.scrap + ", 레벨 +" + delta.level + ", 교전 " + delta.fights + "회, 후퇴 " + delta.retreats + "회, 유물 " + delta.relics + "점");
+  f.push("현재 지시: " + DIRECTIVES[S.dir].name);
+  var picked = highlights(evts).slice(-8);
+  if (picked.length){
+    f.push("겪은 일(시각순):");
+    for (var i = 0; i < picked.length; i++) f.push("- " + clock(picked[i].t) + " " + String(picked[i].x).replace(/<[^>]+>/g, ""));
+  }
+  return f.join("\n");
+}
+
+var notePending = false;
+var noteCache = { key:null, text:null };
+function fillNote(evts, delta, awayMs){
+  var box = $("noteBody"); if (!box) return;
+  var fb = fallbackNote(evts, delta, awayMs);
+  var key = String(save.ack || 0);
+  if (noteCache.key === key && noteCache.text){
+    box.parentElement.classList.remove("pending");
+    box.textContent = noteCache.text;
+    return;
+  }
+  if (!sample){ box.parentElement.classList.remove("pending"); box.textContent = fb; return; }
+  if (notePending) return;
+  notePending = true;
+  box.classList.add("blink");
+  box.textContent = "";
+  var prompt =
+    "당신은 방치형 탐사 게임 속 '탐사체'라는 인격입니다. 클럭이 멈춘 실리콘 대륙을 홀로 걷는 자율 기계이고, 이름은 '" + save.name + "'입니다.\n" +
+    "관측자(플레이어)가 자리를 비운 동안의 일을 돌아와 앉은 사람에게 직접 이야기하듯 씁니다.\n\n" +
+    "규칙:\n- 한국어. 3~5문장. 존댓말이되 사무적이지 않게, 담담하고 조금 사적으로.\n" +
+    "- 아래 사실만 사용합니다. 없는 사건을 지어내지 마십시오.\n" +
+    "- 관측자를 '관측자'라고 부릅니다. 인사말·머리말·따옴표·목록 없이 본문만 씁니다.\n" +
+    "- 마지막 한 문장은 지금 당신이 느끼는 것이나 다음에 하려는 일입니다.\n\n" +
+    "사실:\n" + noteFacts(evts, delta, awayMs);
+  sample(prompt, {
+    modelTier: "default",
+    onText: function(e){ box.classList.remove("blink"); box.textContent = e.text; }
+  }).then(function(res){
+    notePending = false;
+    box.classList.remove("blink");
+    box.parentElement.classList.remove("pending");
+    box.textContent = res.text || fb;
+    noteCache = { key:key, text:box.textContent };
+  }).catch(function(err){
+    notePending = false;
+    box.classList.remove("blink");
+    box.parentElement.classList.remove("pending");
+    box.textContent = (err && err.text) ? err.text : fb;
+    noteCache = { key:key, text:box.textContent };
+  });
+}
+
+function renderBrief(){
+  var v = $("view-brief");
+  var ackT = save.ack || 0, nt = nowTick();
+  var evts = S.events.filter(function(e){ return e.t > ackT; });
+  var awayMs = Math.max(0, (nt - ackT) * TICK_MS);
+  var fresh = evts.length > 0 && awayMs >= 20 * 60 * 1000;
+  var delta = {
+    depth: S.depth - S0.depth, scrap: S.gainedScrap - S0.gainedScrap,
+    level: S.level - S0.level, fights: S.fights - S0.fights,
+    retreats: S.retreats - S0.retreats, relics: S.relics.length - S0.relics.length
+  };
+  $("briefDot").hidden = !fresh;
+
+  var h = "";
+  if (!fresh){
+    h += '<p class="eyebrow">현재 상태 · ' + esc(clock(nt)) + '</p>';
+    h += '<h2 class="head">' + esc(ja(save.name, "은", "는")) + ' 지금 ' + esc(S.locName) + '에 있습니다.</h2>';
+    h += '<p class="sub">' + esc(DIRECTIVES[S.dir].name) + ' 지시를 수행 중 · 마지막 보고 이후 ' + esc(dur(awayMs)) + ' 경과</p>';
+    h += '<div class="gains">'
+      + '<span class="gain">심도 <b>' + S.depth + '</b></span>'
+      + '<span class="gain">파편 <b>' + S.scrap + '</b></span>'
+      + '<span class="gain">유물 <b>' + S.relics.length + '</b></span>'
+      + '<span class="gain">교전 <b>' + S.fights + '</b></span>'
+      + '</div>';
+    var recent = S.events.slice(-6).reverse();
+    h += '<ul class="tl">';
+    for (var i = 0; i < recent.length; i++){
+      h += '<li class="' + kindClass(recent[i].k) + '"><div class="t mono">' + clock(recent[i].t)
+        + '</div><div class="b"><span class="tag">' + kindTag(recent[i].k) + '</span><p>' + recent[i].x + '</p></div></li>';
+    }
+    h += '</ul>';
+    h += '<p class="warnline">한참 자리를 비웠다가 돌아오면, 여기에 부재 보고서가 올라옵니다.</p>';
+    v.innerHTML = h;
+    return;
+  }
+
+  var big = durBig(awayMs);
+  h += '<p class="eyebrow">부재 보고서 · ' + esc(dayLabel(nt)) + '</p>';
+  h += '<div class="away"><div class="big mono">' + esc(big.n) + '</div><div class="cap">' + esc(big.u) + ' 동안<br>혼자 걸었습니다</div></div>';
+
+  var from = S0.locName, to = S.locName;
+  h += '<div class="route"><span class="stop">' + esc(from) + ' <span class="mono">' + S0.depth + '</span></span>';
+  h += '<span class="arrow mono">───▶</span>';
+  h += '<span class="stop now">' + esc(to) + ' <span class="mono">' + S.depth + '</span></span></div>';
+
+  h += '<div class="gains">';
+  h += '<span class="gain' + (delta.depth > 0 ? ' up' : '') + '">전진 <b>+' + delta.depth + '</b></span>';
+  h += '<span class="gain' + (delta.scrap > 0 ? ' up' : '') + '">파편 <b>+' + delta.scrap + '</b></span>';
+  if (delta.relics > 0) h += '<span class="gain up">유물 <b>+' + delta.relics + '</b></span>';
+  if (delta.level > 0) h += '<span class="gain up">레벨 <b>+' + delta.level + '</b></span>';
+  h += '<span class="gain">교전 <b>' + delta.fights + '</b></span>';
+  if (delta.retreats > 0) h += '<span class="gain">후퇴 <b>' + delta.retreats + '</b></span>';
+  h += '</div>';
+
+  var hl = highlights(evts);
+  h += '<ul class="tl">';
+  for (var j = 0; j < hl.length; j++){
+    h += '<li class="' + kindClass(hl[j].k) + '"><div class="t mono">' + clock(hl[j].t)
+      + '</div><div class="b"><span class="tag">' + kindTag(hl[j].k) + '</span><p>' + hl[j].x + '</p></div></li>';
+  }
+  h += '</ul>';
+
+  h += '<div class="note pending"><p class="who">' + esc(save.name) + '의 기록</p><p id="noteBody">신호를 정렬하는 중…</p></div>';
+  h += '<button class="ack" id="ackBtn">보고 확인 · 회선 정리</button>';
+  v.innerHTML = h;
+
+  $("ackBtn").onclick = function(){
+    save.ack = nowTick();
+    persist();
+    refresh(true);
+    toast("보고를 확인했습니다.");
+  };
+  fillNote(evts, delta, awayMs);
+}
+
+/* ── 항해일지 ─────────────────────────────────────────── */
+function renderLog(){
+  var v = $("view-log");
+  var h = '<p class="eyebrow">항해일지 · 최근 ' + S.events.length + '건</p>';
+  h += '<h2 class="head">' + esc(ja(save.name, "이", "가")) + ' 보내온 기록</h2>';
+  h += '<p class="sub">5분마다 한 줄씩. 당신이 보고 있지 않을 때도 쌓입니다.</p>';
+  h += '<div class="logwrap">';
+  var rev = S.events.slice().reverse(), lastDay = "";
+  for (var i = 0; i < rev.length; i++){
+    var e = rev[i], d = dayLabel(e.t);
+    if (d !== lastDay){ h += '<div class="daymark">' + esc(d) + '</div>'; lastDay = d; }
+    h += '<div class="row sev-' + e.s + '"><div class="ts">' + clock(e.t) + '</div><div class="msg">' + e.x + '</div></div>';
+  }
+  h += '</div>';
+  if (!S.events.length) h += '<p class="empty">아직 기록이 없습니다. 첫 행보까지 5분.</p>';
+  v.innerHTML = h;
+}
+
+/* ── 정비 ─────────────────────────────────────────────── */
+var SUPPLY_COOL = 72; // 6시간
+function renderRig(){
+  var v = $("view-rig"), nt = nowTick();
+  var h = '<p class="eyebrow">지시 회선</p>';
+  h += '<h2 class="head">무엇을 우선할까요</h2>';
+  h += '<p class="sub">지시는 지금 이후의 행보부터 적용됩니다. 이미 지나간 시간은 바뀌지 않습니다.</p>';
+  h += '<div class="opts">';
+  for (var key in DIRECTIVES){
+    var d = DIRECTIVES[key];
+    h += '<button class="opt" data-dir="' + key + '" aria-pressed="' + (S.dir === key) + '">'
+      + '<span class="k">' + d.k + '</span><span><strong>' + esc(d.name) + '</strong><span>' + esc(d.desc) + '</span></span></button>';
+  }
+  h += '</div>';
+
+  h += '<p class="eyebrow">개장 · 보유 파편 <span class="mono" style="color:var(--accent)">' + S.scrap + '</span></p>';
+  for (var i = 0; i < UPGRADES.length; i++){
+    var u = UPGRADES[i], lv = S.up[u.id], c = upCost(lv), can = S.scrap >= c;
+    h += '<div class="rigrow"><div class="t"><strong>' + esc(u.name) + '<span class="lv">' + lv + '단</span></strong>'
+      + '<span class="d">' + esc(u.desc) + '</span></div>'
+      + '<button class="buy" data-up="' + u.id + '"' + (can ? "" : " disabled") + '>개장 <b>' + c + '</b></button></div>';
+  }
+
+  var cool = nt - (save.supplyAt || -9999);
+  var ready = cool >= SUPPLY_COOL;
+  h += '<div class="rigrow"><div class="t"><strong>보급 강하</strong><span class="d">전하를 가득 채우고 내구를 35% 회복합니다'
+    + (ready ? "" : " · " + dur((SUPPLY_COOL - cool) * TICK_MS) + " 후 가능") + '</span></div>'
+    + '<button class="buy" id="supplyBtn"' + (ready ? "" : " disabled") + '>강하</button></div>';
+
+  h += '<p class="eyebrow" style="margin-top:26px">수습한 유물 · ' + S.relics.length + '</p>';
+  if (S.relics.length){
+    h += '<div class="relics">';
+    for (var r = 0; r < S.relics.length; r++) h += '<span class="relic"><b>' + esc(S.relics[r]) + '</b></span>';
+    h += '</div>';
+  } else h += '<p class="empty">아직 아무것도 파내지 못했습니다.</p>';
+
+  h += '<p class="eyebrow">호명</p><div class="namefield"><input id="nameIn" maxlength="14" value="' + esc(save.name) + '"><button class="ghost" id="nameSave">변경</button></div>';
+  h += '<p class="warnline">기록은 이 아티팩트에 저장됩니다. 앱을 닫아도, 폰을 바꿔도 같은 계정이면 같은 탐사체를 만납니다.<br>'
+    + '가동 이후 ' + esc(dur(Date.now() - save.startedAt)) + ' · 총 ' + nt + '행보 · 씨앗 <span class="mono">' + save.seed.toString(16).toUpperCase() + '</span></p>';
+  v.innerHTML = h;
+
+  var opts = v.querySelectorAll("[data-dir]");
+  for (var o = 0; o < opts.length; o++) opts[o].onclick = function(){
+    save.acts.push({ t: nowTick(), k: "dir", v: this.getAttribute("data-dir") });
+    persist(); refresh(true); toast("지시를 전달했습니다.");
+  };
+  var buys = v.querySelectorAll("[data-up]");
+  for (var b = 0; b < buys.length; b++) buys[b].onclick = function(){
+    var id = this.getAttribute("data-up");
+    if (S.scrap < upCost(S.up[id])) return;
+    save.acts.push({ t: nowTick(), k: "up", v: id });
+    persist(); refresh(true); toast("개장을 지시했습니다.");
+  };
+  if (ready) $("supplyBtn").onclick = function(){
+    save.supplyAt = nowTick();
+    save.acts.push({ t: nowTick(), k: "supply" });
+    persist(); refresh(true); toast("보급을 내려보냈습니다.");
+  };
+  $("nameSave").onclick = function(){
+    var n = $("nameIn").value.trim();
+    if (!n) return;
+    save.name = n.slice(0, 14); persist(); refresh(true); toast("호명을 바꿨습니다.");
+  };
+}
+
+/* ── 교신 ─────────────────────────────────────────────── */
+function renderChat(){
+  var c = $("chat");
+  if (!chat.turns.length){
+    c.innerHTML = '<div class="bub it"><div class="who">' + esc(save.name)
+      + '</div><div class="body">회선 열렸습니다, 관측자. 여기 소식이라면 얼마든지 전해 드리겠습니다.</div></div>';
+    return;
+  }
+  var h = "";
+  for (var i = 0; i < chat.turns.length; i++){
+    var t = chat.turns[i];
+    h += '<div class="bub ' + (t.r === "u" ? "me" : "it") + '"><div class="who">'
+      + (t.r === "u" ? "관측자" : esc(save.name)) + '</div><div class="body">' + esc(t.x) + '</div></div>';
+  }
+  c.innerHTML = h;
+  c.lastElementChild.scrollIntoView({ block: "end" });
+}
+
+function chatRules(){
+  var recent = S.events.slice(-14).map(function(e){
+    return "- " + clock(e.t) + " " + String(e.x).replace(/<[^>]+>/g, "");
+  }).join("\n");
+  return "당신은 방치형 탐사 게임 속 '탐사체'입니다. 이 대화 전체에서 그 인격을 유지하십시오.\n\n" +
+    "정체성: 이름은 '" + save.name + "'(식별부호 " + save.desig + "). 클럭이 멈춘 실리콘 대륙을 홀로 걷는 자율 기계입니다. " +
+    "상대는 멀리서 신호만 받는 '관측자'이고, 당신은 관측자를 신뢰하지만 그가 늘 자리에 없다는 것도 압니다.\n" +
+    "말투: 한국어 존댓말. 담담하고 짧게, 2~5문장. 과장하지 않고 관찰한 것을 말합니다. 가끔 스스로에 대한 생각을 한 문장 덧붙입니다. " +
+    "이모지·목록·머리말 없이 말만 합니다.\n" +
+    "한계: 대륙 밖 세계, 현실의 뉴스, 게임 시스템 용어(확률·가중치·틱)는 모릅니다. 모르는 것은 모른다고 말합니다. " +
+    "관측자가 지시를 말하면 '정비' 화면에서 지시를 내려 달라고 안내합니다. 없는 사건을 지어내지 마십시오.\n\n" +
+    "지금 상태:\n" +
+    "- 위치: " + S.locName + " (심도 " + S.depth + ")\n" +
+    "- 내구 " + S.hp + "/" + S.maxHp + ", 전하 " + S.charge + "/" + S.maxCharge + ", LV " + S.level + ", 파편 " + S.scrap + "\n" +
+    "- 현재 지시: " + DIRECTIVES[S.dir].name + "\n" +
+    "- 지금까지: 전진 " + S.moves + "회, 교전 " + S.fights + "회, 후퇴 " + S.retreats + "회, 유물 " + S.relics.length + "점\n" +
+    "- 지닌 유물: " + (S.relics.length ? S.relics.join(", ") : "없음") + "\n" +
+    "- 가동 이후 " + dur(Date.now() - save.startedAt) + " 경과\n\n" +
+    "최근 일지:\n" + (recent || "- (아직 기록 없음)") + "\n\n이제 관측자의 말에 답하십시오.";
+}
+
+var talking = false;
+function sendMsg(){
+  var box = $("say"), msg = box.value.trim();
+  if (!msg || talking) return;
+  if (!sample){ toast("이 화면에서는 교신 회선을 열 수 없습니다."); return; }
+  box.value = "";
+  chat.turns.push({ r: "u", x: msg });
+  renderChat(); persist();
+
+  talking = true; $("send").disabled = true;
+  var c = $("chat");
+  var bub = document.createElement("div");
+  bub.className = "bub it";
+  bub.innerHTML = '<div class="who">' + esc(save.name) + '</div><div class="body blink"></div>';
+  c.appendChild(bub);
+  var body = bub.lastElementChild;
+  bub.scrollIntoView({ block: "end" });
+
+  var hist = chat.turns.slice(-14);
+  var input = [{ role: "user", content: chatRules() }];
+  for (var i = 0; i < hist.length; i++){
+    if (hist[i].r === "u") input.push({ role: "user", content: hist[i].x });
+    else input.push({ role: "assistant", content: hist[i].x });
+  }
+  if (input[input.length - 1].role !== "user") input.push({ role: "user", content: "…" });
+
+  sample(input, {
+    cache: false,
+    onText: function(e){ body.classList.remove("blink"); body.textContent = e.text; bub.scrollIntoView({ block: "end" }); }
+  }).then(function(res){
+    talking = false; $("send").disabled = false;
+    chat.turns.push({ r: "a", x: res.text });
+    if (chat.turns.length > 60) chat.turns = chat.turns.slice(-60);
+    persist(); renderChat();
+  }).catch(function(err){
+    talking = false; $("send").disabled = false;
+    body.classList.remove("blink");
+    var code = err && err.code;
+    var msgs = {
+      not_granted:"교신 허가가 없습니다. 이 아티팩트에 Claude 사용을 허용하면 회선이 열립니다.",
+      rate_limited:"회선이 붐빕니다. 잠시 뒤 다시 불러 주십시오.",
+      session_expired:"인증이 만료됐습니다. 다시 로그인한 뒤 시도해 주십시오.",
+      refused:"그 말에는 답하지 못했습니다. 다르게 물어봐 주십시오.",
+      cancelled:"교신이 끊겼습니다."
+    };
+    if (err && err.text){
+      body.textContent = err.text;
+      chat.turns.push({ r: "a", x: err.text });
+      persist();
+    } else {
+      body.textContent = msgs[code] || "신호가 닿지 않습니다. 잠시 뒤 다시 시도해 주십시오.";
+      bub.classList.add("err");
+    }
+  });
+}
+
+/* ── 탭 ───────────────────────────────────────────────── */
+var TABS = ["brief", "log", "talk", "rig"];
+var active = "brief";
+function show(name){
+  active = name;
+  for (var i = 0; i < TABS.length; i++){
+    var t = TABS[i];
+    $("tab-" + t).setAttribute("aria-selected", String(t === name));
+    $("view-" + t).hidden = (t !== name);
+  }
+  if (name === "log") renderLog();
+  if (name === "rig") renderRig();
+  if (name === "talk"){ renderChat(); }
+  if (name === "brief") renderBrief();
+  window.scrollTo(0, 0);
+}
+
+/* ── 갱신 ─────────────────────────────────────────────── */
+var lastTick = -1;
+function refresh(force){
+  var nt = nowTick();
+  S = simulate(save, nt);
+  S0 = simulate(save, Math.min(save.ack || 0, nt));
+  renderHud();
+  drawWave();
+  var ackT = save.ack || 0;
+  $("briefDot").hidden = !(nt - ackT >= 4 && S.events.some(function(e){ return e.t > ackT; }));
+  if (force || nt !== lastTick){
+    if (active === "log") renderLog();
+    if (active === "rig") renderRig();
+    if (force && active === "brief") renderBrief();
+  }
+  lastTick = nt;
+}
+
+/* ── 기동 ─────────────────────────────────────────────── */
+function start(){
+  $("load").hidden = true;
+  $("boot").hidden = true;
+  $("app").hidden = false;
+  refresh(true);
+  show("brief");
+  waveLoop();
+  setInterval(function(){ refresh(false); }, 15000);
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden) refresh(true);
+  });
+}
+
+function boot(){
+  var names = ["초", "여울", "다온", "미르", "노을", "가람", "해리", "이레"];
+  $("bootName").value = names[Math.floor(Math.random() * names.length)];
+  $("load").hidden = true;
+  $("boot").hidden = false;
+  $("bootGo").onclick = function(){
+    var n = $("bootName").value.trim() || "탐사체";
+    save = newSave(n.slice(0, 14));
+    chat = { turns: [] };
+    persist();
+    start();
+  };
+  $("bootName").addEventListener("keydown", function(e){ if (e.key === "Enter") $("bootGo").click(); });
+}
+
+/* ── 초기화 ───────────────────────────────────────────── */
+$("send").onclick = sendMsg;
+$("say").addEventListener("keydown", function(e){
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendMsg(); }
+});
+$("say").addEventListener("input", function(){
+  this.style.height = "44px";
+  this.style.height = Math.min(120, this.scrollHeight) + "px";
+});
+for (var i = 0; i < TABS.length; i++){
+  (function(t){ $("tab-" + t).onclick = function(){ show(t); }; })(TABS[i]);
+}
+window.addEventListener("resize", function(){ drawWave(); });
+
+(async function init(){
+  var local = lsGet(LS_KEY);
+  var started = false;
+  if (local && local.save && local.save.seed !== undefined){
+    save = local.save; chat = local.chat || { turns: [] };
+    if (!save.acts) save.acts = [{ t: 0, k: "dir", v: "explore" }];
+    start(); started = true;                 // 저장본이 있으면 기다리지 않고 바로 콘솔로
+  }
+
+  try { db = await claude.use("db"); } catch (e) { db = null; }
+  try { sample = await claude.use("sample"); } catch (e) { sample = null; }
+
+  if (db){
+    try {
+      var snap = await db.doc("save/main").get();
+      if (snap.exists){
+        var remote = snap.data();
+        if (remote && remote.seed !== undefined && (!save || remote.startedAt <= save.startedAt)) save = remote;
+        if (!save.acts) save.acts = [{ t: 0, k: "dir", v: "explore" }];
+      }
+      var csnap = await db.doc("save/chat").get();
+      if (csnap.exists){
+        var rc = csnap.data();
+        if (rc && rc.turns && rc.turns.length >= chat.turns.length) chat = { turns: rc.turns };
+      }
+    } catch (e) {}
+  }
+
+  if (save && save.seed !== undefined){
+    if (db) persist();
+    if (started) refresh(true); else start();
+  } else if (!started){
+    boot();
+  }
+})();
+})();
+</script>
